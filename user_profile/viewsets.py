@@ -1,5 +1,6 @@
 from rest_framework.decorators import api_view
-from .serializers import UserCreateProfileSerializer, UserEditProfileSerializer, UserSerializer
+from .serializers import UserCreateProfileSerializer, UserEditProfileSerializer, UserSerializer, \
+    ChangePasswordSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from .models import UserProfile
@@ -29,3 +30,11 @@ def get_user_profile(request):
     serializer = UserSerializer(instance=request.user.profile)
     return Response(serializer.data)
 
+
+@api_view(['POST'])
+def change_password(request):
+    serializer = ChangePasswordSerializer(instance=request.user.profile, data=request.data)
+    if serializer.is_valid():
+        instance = serializer.save()
+        return Response({'status': 'success'}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
