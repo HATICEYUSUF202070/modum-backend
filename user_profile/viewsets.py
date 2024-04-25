@@ -33,7 +33,7 @@ def get_user_profile(request):
 
 @api_view(['POST'])
 def change_password(request):
-    serializer = ChangePasswordSerializer(instance=request.user.profile, data=request.data)
+    serializer = ChangePasswordSerializer(instance=request.user, data=request.data)
     if serializer.is_valid():
         instance = serializer.save()
         return Response({'status': 'success'}, status=status.HTTP_201_CREATED)
