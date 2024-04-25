@@ -1,0 +1,26 @@
+[tool.ruff]
+
+# Exclude common development directories
+exclude = [
+    ".git",
+    ".idea",
+    ".venv",
+    "env",
+]
+
+# Set line length and indentation (adjust as needed)
+line-length = 88
+indent-width = 4
+
+# Target Python version (replace with your project's version)
+target-version = "py311"
+
+# Enable basic linting rules (add more as needed)
+[tool.ruff.lint]
+select = ["E", "F"]
+
+# Formatting options (similar to Black)
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
