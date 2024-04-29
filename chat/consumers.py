@@ -1,7 +1,10 @@
+from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
+
+from .models import ChatRoom
 from .registry import registry
 from django.utils import timezone
-from .utils import get_user_by_token, get_room, get_message, get_rooms_from_user, create_room
+from .utils import get_user_by_token, get_room, get_rooms_from_user, create_room, create_message
 
 
 class ChatConsumer(AsyncJsonWebsocketConsumer):
@@ -23,7 +26,10 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json(event)
 
     async def broadcast(self, room, message):
-        await self.channel_layer.group_send(str(room.id), {
+        if type(room) is not int:
+            room = room.id
+
+        await self.channel_layer.group_send(str(room), {
             'type': 'group_message',
             'message': message
         })
@@ -68,16 +74,24 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
         for user_id in user_ids:
             channel_name = registry.get_channel_for_user(user_id)
-            await self.channel_layer.group_add(str(room.id), channel_name)
+            channel_name and await self.channel_layer.group_add(str(room.id), channel_name)
 
-        message = message.data
-        await self.broadcast(room, message)
+        if message:
+            message = message.data
+            await self.broadcast(room, message)
 
     async def on_message(self, content):
-        pass
+        room = content.get('room')
+        user = self.scope['user']
+        text = content.get('text')
+        message = await create_message(room, user, text)
+        await self.broadcast(room, message)
 
     async def receive_json(self, content, **kwargs):
         message_type = content.get('type')
 
         if message_type == 'create_room':
             await self.on_create_room(content)
+
+        if message_type == 'message':
+            await self.on_message(content)

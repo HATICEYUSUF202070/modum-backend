@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from chat.models import ChatRoom, TextMessage
 from django.db import models
 
-from chat.serializers import ChatMessageSerializer
+from chat.serializers import ChatMessageSerializer, ChatRoomSerializer
 
 
 @database_sync_to_async
@@ -31,35 +31,37 @@ def get_room(author_id, user_ids, group_id, name=''):
 
 
 @database_sync_to_async
-def create_room(author_id, user_ids, name) -> tuple[ChatRoom, ChatMessageSerializer]:
+def create_room(author_id, user_ids, name) -> tuple[ChatRoom, ChatMessageSerializer | None]:
     user = User.objects.get(id=author_id)
 
-    room = ChatRoom.objects.create(
-        name=name,
+    room, is_created = ChatRoom.objects.get_or_create(
+        name=name if len(user_ids) > 1 else f'{user_ids[0]}',
         created_by=user,
     )
 
     room.members.add(*user_ids)
     room.save()
 
-    message = TextMessage.objects.create(
-        user=user,
-        text=f'Gurup {user.username} tarafından oluşturuldu!',
-        room=room,
-    )
+    message = None
+    if not is_created:
+        message = TextMessage.objects.create(
+            user=user,
+            text=f'Gurup {user.username} tarafından oluşturuldu!',
+            room=room,
+        )
 
-    return room, ChatMessageSerializer(message)
+    return room, ChatMessageSerializer(message) if message else None
 
 
 @database_sync_to_async
-def get_message(room: ChatRoom, user: User, text: str):
-    obj = TextMessage.objects.create(
+def create_message(room: int, user: User, text: str) -> TextMessage:
+    message = TextMessage.objects.create(
         user=user,
-        room=room,
-        text=text
+        text=text,
+        room_id=room,
     )
 
-    return ChatMessageSerializer(obj).data
+    return ChatMessageSerializer(message).data
 
 
 @database_sync_to_async
