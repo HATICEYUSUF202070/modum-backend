@@ -6,6 +6,7 @@ from django.conf.urls.static import static
 
 api_patterns = [
     path("auth/", include("user_profile.urls")),
+    path("chat/", include("chat.urls")),
 ]
 
 urlpatterns = [

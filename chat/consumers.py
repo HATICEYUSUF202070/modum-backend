@@ -1,8 +1,7 @@
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from .registry import registry
 from django.utils import timezone
-
-from .utils import get_user_by_token, get_room, get_message, get_rooms_from_user
+from .utils import get_user_by_token, get_room, get_message, get_rooms_from_user, create_room
 
 
 class ChatConsumer(AsyncJsonWebsocketConsumer):
@@ -61,24 +60,24 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             channel_name = registry.get_channel_for_user(user_id)
             channel_name and await self.channel_layer.group_add(room_id, registry.get_channel_for_user(user_id))
 
-    async def receive_json(self, content, **kwargs):
-        user_ids, group_id, name, text = content.get('user_ids', None), content.get('group_id', None), content.get(
-            'name', ''), content.get('text', '')
+    async def on_create_room(self, content):
+        user_ids, name = content.get('user_ids', None), content.get('name', None)
 
-        if not text:
-            await self.send_json(
-                {'status': 'error', 'message': 'Text is required'},
-            )
+        room, message = await create_room(self.scope['user'].id, user_ids, name)
+        await self.channel_layer.group_add(str(room.id), self.channel_name)
 
-        room, is_created = await get_room(
-            self.scope['user'].id,
-            user_ids,
-            group_id,
-            name
-        )
+        for user_id in user_ids:
+            channel_name = registry.get_channel_for_user(user_id)
+            await self.channel_layer.group_add(str(room.id), channel_name)
 
-        is_created and await self.add_other_users_to_group(user_ids, str(room.id))
-
-        message = await get_message(room, self.scope['user'], text)
-
+        message = message.data
         await self.broadcast(room, message)
+
+    async def on_message(self, content):
+        pass
+
+    async def receive_json(self, content, **kwargs):
+        message_type = content.get('type')
+
+        if message_type == 'create_room':
+            await self.on_create_room(content)

@@ -21,7 +21,8 @@ def edit_user_profile(request):
     serializer = UserEditProfileSerializer(instance=request.user.profile, data=request.data)
     if serializer.is_valid():
         instance = serializer.save()
-        return Response({'status': 'success'}, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

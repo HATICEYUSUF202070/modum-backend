@@ -19,15 +19,17 @@ class UserCreateProfileSerializer(serializers.ModelSerializer):
 class UserEditProfileSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(required=False, default='')
     last_name = serializers.CharField(required=False, default='')
+    email = serializers.EmailField(required=False, default='')
 
     class Meta:
         model = UserProfile
-        fields = ('phone_number', 'bio', 'photo', 'first_name', 'last_name')
+        fields = ('phone_number', 'bio', 'photo', 'first_name', 'last_name', 'email')
 
     def save(self, **kwargs):
         instance = super().save(**kwargs)
         instance.user.first_name = self.validated_data['first_name']
         instance.user.last_name = self.validated_data['last_name']
+        instance.user.email = self.validated_data['email']
         instance.user.save()
         return instance
 
@@ -37,7 +39,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = ('user', "phone_number", 'photo', 'bio')
+        fields = ('user', "phone_number", 'photo', 'bio',)
 
 
 class ChangePasswordSerializer(serializers.ModelSerializer):

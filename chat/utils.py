@@ -31,6 +31,27 @@ def get_room(author_id, user_ids, group_id, name=''):
 
 
 @database_sync_to_async
+def create_room(author_id, user_ids, name) -> tuple[ChatRoom, ChatMessageSerializer]:
+    user = User.objects.get(id=author_id)
+
+    room = ChatRoom.objects.create(
+        name=name,
+        created_by=user,
+    )
+
+    room.members.add(*user_ids)
+    room.save()
+
+    message = TextMessage.objects.create(
+        user=user,
+        text=f'Gurup {user.username} tarafından oluşturuldu!',
+        room=room,
+    )
+
+    return room, ChatMessageSerializer(message)
+
+
+@database_sync_to_async
 def get_message(room: ChatRoom, user: User, text: str):
     obj = TextMessage.objects.create(
         user=user,
