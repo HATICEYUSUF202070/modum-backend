@@ -10,4 +10,6 @@ media/*
 .env
 .venv/
 venv/
+client/*
 client
+client/
